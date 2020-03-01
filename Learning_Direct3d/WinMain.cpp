@@ -10,14 +10,17 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 int widthClientRegion{};
 int heightClientRegion{};
 
-int CALLBACK wWinMain(
-	HINSTANCE hInstance,
-	HINSTANCE,
-	PWSTR szCmdLine,
-	int nCmdShow)
+// Прототип функции обработки сообщений с пользовательским названием:
+LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+
+int WINAPI WinMain(HINSTANCE hInstance, // дескриптор (в т.ч. некий идентификатор) экземпляра приложения
+                   HINSTANCE,
+                   LPSTR lpCmdLine,
+                   // указатель на строку с аргументами коммандной строки (в случае если прил. стартует из коммандной строки)
+                   int nCmdShow) // режим отображения окна
 {
 	MSG msg{}; // Сообщения которые будут поступать по конвееру в наше приложение
-	HWND hwnd{}; // Дескриптор окна нашего приложения для того, чтобы система могла работать с ним из решима Core(ядра) 
+	HWND hwnd{}; // Дескриптор окна нашего приложения для того, чтобы система могла работать с ним 
 
 	// Initialize window class, and feel it start properties
 	WNDCLASSEX wc{
@@ -35,9 +38,52 @@ int CALLBACK wWinMain(
 	// wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	// wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
 	// wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
-	wc.hInstance = hInstance; //Дескриптор экземпляра, который содержит оконную процедуру для класса.
-	wc.lpfnWndProc = [](HWND hWnd, UINT uMsg, WPARAM wParam,
-	                    LPARAM lParam)-> LRESULT // Оконная процедура для обработки сообщений (здесь реализована лямдой)
+	
+	wc.hInstance = hInstance; // Дескриптор экземпляра, который содержит оконную процедуру для класса.
+	wc.lpfnWndProc = WndProc; // указатель на пользовательскую функцию
+	wc.lpszClassName = L"MyAppClass"; // Имя класса окна
+	wc.lpszMenuName = nullptr; // Устанавливает имя ресурса меню класса
+	// Устанавливает стиль(и) класса. Этот член структуры может быть любой комбинацией Стилей класса.
+	wc.style = CS_VREDRAW | CS_HREDRAW;
+
+
+	// Register window class
+	if (!RegisterClassEx(&wc))
+		return EXIT_FAILURE;
+
+	// Create window instance
+	hwnd = CreateWindowEx(0,
+	                      wc.lpszClassName,
+	                      L"Header",
+	                      WS_OVERLAPPEDWINDOW,
+	                      CW_USEDEFAULT, // положение окна по оси х (по умолчанию)
+	                      NULL, // позиция окна по оси у (раз дефолт в х, то писать не нужно)
+	                      640, 
+	                      480,
+	                      nullptr,
+	                      nullptr,
+	                      wc.hInstance,
+	                      nullptr);
+
+	if (hwnd == INVALID_HANDLE_VALUE)
+		return EXIT_FAILURE;
+
+	ShowWindow(hwnd, nCmdShow);
+	UpdateWindow(hwnd);
+
+	// Run loop for handling messages
+	while (GetMessage(&msg, nullptr, 0, 0))
+	{
+		TranslateMessage(&msg); // Разбор сообщения
+		DispatchMessage(&msg); // Отправка сообщения в оконную процедуру
+	}
+
+	return static_cast<int>(msg.wParam);
+}
+
+// Оконная процедура для обработки сообщений
+LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
 	{
 		switch (uMsg)
 		{
@@ -90,39 +136,4 @@ int CALLBACK wWinMain(
 		}
 		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	};
-	wc.lpszClassName = L"MyAppClass"; // Имя класса окна
-	wc.lpszMenuName = nullptr; // Устанавливает имя ресурса меню класса
-	// Устанавливает стиль(и) класса. Этот член структуры может быть любой комбинацией Стилей класса.
-	wc.style = CS_VREDRAW | CS_HREDRAW;
-	
-
-	// Register window class
-	if (!RegisterClassEx(&wc))
-		return EXIT_FAILURE;
-
-	// Create window instance
-	hwnd = CreateWindowEx(0,
-		wc.lpszClassName, 
-		L"Header", 
-		WS_OVERLAPPEDWINDOW, 
-		200, 200, 640, 480, 
-		nullptr, 
-		nullptr,
-	    wc.hInstance, 
-		nullptr);
-	
-	if (hwnd == INVALID_HANDLE_VALUE)
-		return EXIT_FAILURE;
-
-	ShowWindow(hwnd, nCmdShow);
-	UpdateWindow(hwnd);
-
-	// Run loop for handling messages
-	while (GetMessage(&msg, nullptr, 0, 0))
-	{
-		TranslateMessage(&msg); // Разбор сообщения
-		DispatchMessage(&msg); // Отправка сообщения в оконную процедуру
-	}
-
-	return static_cast<int>(msg.wParam);
 }
