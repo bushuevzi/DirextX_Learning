@@ -4,11 +4,14 @@
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
 processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
-
 #include <Windows.h>
+#include "WindowsMessageMap.h"
+#include <locale>
+#include <codecvt>
+#include <string>
 
-int widthClientRegion{};
-int heightClientRegion{};
+// Конвертер для преобразования string в wstring и обратно
+// https://stackoverflow.com/questions/2573834/c-convert-string-or-char-to-wstring-or-wchar-t
 
 // Прототип функции обработки сообщений с пользовательским названием:
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -38,7 +41,7 @@ int WINAPI WinMain(HINSTANCE hInstance, // дескриптор (в т.ч. некий идентификато
 	// wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	// wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
 	// wc.hIconSm = LoadIcon(nullptr, IDI_APPLICATION);
-	
+
 	wc.hInstance = hInstance; // Дескриптор экземпляра, который содержит оконную процедуру для класса.
 	wc.lpfnWndProc = WndProc; // указатель на пользовательскую функцию
 	wc.lpszClassName = L"MyAppClass"; // Имя класса окна
@@ -58,7 +61,7 @@ int WINAPI WinMain(HINSTANCE hInstance, // дескриптор (в т.ч. некий идентификато
 	                      WS_OVERLAPPEDWINDOW,
 	                      CW_USEDEFAULT, // положение окна по оси х (по умолчанию)
 	                      NULL, // позиция окна по оси у (раз дефолт в х, то писать не нужно)
-	                      640, 
+	                      640,
 	                      480,
 	                      nullptr,
 	                      nullptr,
@@ -84,56 +87,25 @@ int WINAPI WinMain(HINSTANCE hInstance, // дескриптор (в т.ч. некий идентификато
 // Оконная процедура для обработки сообщений
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	static WindowsMessageMap mm;
+	auto outString = mm(uMsg, lParam, wParam);
+
+	// Convert from string to wstring. Don't forget "delete[] wstr;" after using wstring
+	int wchars_num = MultiByteToWideChar(CP_UTF8, 0, outString.c_str(), -1, NULL, 0);
+	wchar_t* wstr = new wchar_t[wchars_num];
+	MultiByteToWideChar(CP_UTF8, 0, outString.c_str(), -1, wstr, wchars_num);
+	
+	OutputDebugString(wstr);
+	delete[] wstr;
+	
+	switch (uMsg)
 	{
-		switch (uMsg)
+	case WM_DESTROY:
 		{
-		case WM_CREATE:
-			{
-				// MessageBox(hWnd, L"Hello!", L"OK", MB_ICONINFORMATION);
-				// ВСЕ контролы являются WINDOW
-				// Рисуем кнопку.
-				HWND hButton = CreateWindow(
-					L"BUTTON", // Имя класса
-					L"OK!", // Текст кнопки
-					WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, // Стиль кнопки
-					0, 0, 300, 30, // Позиция и размеры
-					hWnd, // Ссылка на родительский объект
-					reinterpret_cast<HMENU>(1555), // Уникальный идентификатор кнопки
-					nullptr, nullptr
-				);
-			}
-			return 0;
-
-			// Обрабатываем нажатие кнопки
-			// Происходит отправка сообщения родительскому окну о том что был задействован какой то дочерний контрол
-		case WM_COMMAND:
-			{
-				switch (LOWORD(wParam))
-					// обрабатываем только те сообщения которые имеют ссылку на кнопку из за которой было вызвано собщение
-				{
-				case 1555:
-					{
-						MessageBox(hWnd, L"DO", L"NE", MB_ICONINFORMATION);
-					}
-					break;
-				}
-			}
-			return 0;
-
-		case WM_SIZE:
-			{
-				widthClientRegion = LOWORD(lParam);
-				heightClientRegion = HIWORD(lParam);
-			}
-			return 0;
-
-		case WM_DESTROY:
-			{
-				// Закрываемое окно отправляет сообщение в программу для закрытия самой программы
-				PostQuitMessage(EXIT_SUCCESS);
-			}
-			return 0;
+			// Закрываемое окно отправляет сообщение в программу для закрытия самой программы
+			PostQuitMessage(EXIT_SUCCESS);
 		}
-		return DefWindowProc(hWnd, uMsg, wParam, lParam);
-	};
+		return 0;
+	default: DefWindowProc(hWnd, uMsg, wParam, lParam);;
+	}
 }
