@@ -100,6 +100,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	
 	switch (uMsg)
 	{
+	case WM_KEYDOWN:
+		{
+			if(wParam == 'F')
+			{
+				SetWindowText(hWnd, L"FFFFFFFF");
+			}
+		}
+		return 0;
+
+	case WM_KEYUP:
+		{
+		SetWindowText(hWnd, L"Header");
+		}
+		return 0;
+		
 	case WM_DESTROY:
 		{
 			// Закрываемое окно отправляет сообщение в программу для закрытия самой программы
